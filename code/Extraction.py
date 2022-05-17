@@ -2,10 +2,10 @@ import torch
 import torch.nn as nn
 
 
-class MultiViewSelfAttention(nn.Module):
+class SimilarityConstrainedMultiViewSelfAttention(nn.Module):
 
     def __init__(self, hidden_size, weights_dropout, view_size):
-        super(MultiViewSelfAttention, self).__init__()
+        super(SimilarityConstrainedMultiViewSelfAttention, self).__init__()
 
         self.view_size = view_size
         self.att_size = hidden_size // view_size
@@ -54,7 +54,7 @@ class Encoder(nn.Module):
     def __init__(self, hidden_size, output_dropout, weights_dropout, view_size):
         super(Encoder, self).__init__()
         self.self_norm = nn.LayerNorm(hidden_size)
-        self.MVSA = MultiViewSelfAttention(hidden_size, weights_dropout, view_size)
+        self.SCMVSA = SimilarityConstrainedMultiViewSelfAttention(hidden_size, weights_dropout, view_size)
         self.output_dropout = nn.Dropout(output_dropout)
 
 
@@ -62,11 +62,11 @@ class Encoder(nn.Module):
 
         y = self.self_norm(x)
 
-        _MVSA = self.MVSA(y, y, y, bias)
+        _SCMVSA = self.SCMVSA(y, y, y, bias)
 
-        _MVSA = self.output_dropout(_MVSA)
+        _SCMVSA = self.output_dropout(_SCMVSA)
 
-        out = torch.mean(x, dim=0) + _MVSA
+        out = torch.mean(x, dim=0) + _SCMVSA
 
         return out
 
