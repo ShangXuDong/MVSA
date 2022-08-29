@@ -1,2 +1,2 @@
-# SCMVSA
-Predicting drug-disease associations via similarity constrained multi-view self-attention
+# SGMVSA
+Predicting Drug-Disease Associations via Similarity Guided Multi-View Self-Attention
