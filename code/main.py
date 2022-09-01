@@ -83,15 +83,7 @@ if __name__ == '__main__':
             train_val_test('Train', epoch, model, data)
             loss, prob, labels = train_val_test('Test ', epoch, model, data)
             
-            if epoch % 100 == 0 :
-                f = open(log_dir, 'a+')
-                f.write(str(epoch)+ str(evaluate(prob.cpu().detach().reshape(-1).numpy(), labels.cpu().detach().reshape(-1).numpy())) + "\n")
-                f.close()
-        labels_list.extend(labels.cpu().detach().reshape(-1).numpy())
-        predicts_list.extend(prob.cpu().detach().reshape(-1).numpy())       
             
-    torch.save(torch.tensor(predicts_list), "/root/Finally/varient2/C_5_predicts_list.pt")
-    torch.save(torch.tensor(labels_list), "/root/Finally/varient2/C_5_labels_list.pt")
     
 
 
