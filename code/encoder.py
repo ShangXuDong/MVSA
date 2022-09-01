@@ -17,9 +17,9 @@ class Encoder(nn.Module):
         dis = self.dis_extraction(data.dis_sim, data.dis_feature)
 
         drug_dis_f = torch.cat((drug, dis), dim=0)
-
+        
         output = self.interaction(data.drug_disease_sim, drug_dis_f)
 
-        drug, dis = output[:self.drug_num, :]+drug, output[self.drug_num:, :]+dis
+        drug, dis = output[:self.drug_num, :], output[self.drug_num:, :]
 
         return drug, dis

@@ -1,5 +1,6 @@
 import scipy.io as scio
 import os.path
+import pandas as pd
 import torch
 from sklearn.model_selection import KFold
 import random
@@ -11,11 +12,15 @@ class ProcessAndData():
     def __init__(self, datasetName, seed=999, KFold_NUM=5):
         random.seed(seed)
         assert datasetName in ['Fdataset', 'Cdataset']
-        root_dir = "../data"
+        root_dir = "./data"
+        # root_dir = "/root/Finally/data"
 
         tensors_dir = os.path.join(root_dir, datasetName, "tensors")
         self.drug_sim_dir = os.path.join(tensors_dir, "drug_sim.pt")
         self.dis_sim_dir = os.path.join(tensors_dir, "dis_sim.pt")
+        self.drug_sim_origin_dir = os.path.join(tensors_dir, "drug_sim_origin.pt")
+        self.dis_sim_origin_dir = os.path.join(tensors_dir, "dis_sim_origin.pt")
+        
         self.r_d_edge_dir = os.path.join(tensors_dir, "r_d_edge.pt")
         self.labels_dir = os.path.join(tensors_dir, "labels.pt")
         self.train_index_dir = os.path.join(tensors_dir, "train_index")
@@ -33,9 +38,51 @@ class ProcessAndData():
             disease_PhS = dataset["disease_PhS"]
             disease_DoS = dataset["disease_DoS"]
             
-            didr = dataset["didr"].T  # 转置之后才是 药物 * 疾病
-            drug_sim = torch.from_numpy(np.array([drug_ChemS, drug_SideS, drug_DDIS, drug_TargetS]))
-            disease_sim = torch.from_numpy(np.array([disease_PhS, disease_DoS]))
+            didr = dataset["didr"].T  
+            drug_num = didr.shape[0]
+            disease_num = didr.shape[1]
+            
+            kth = 10
+            drug_ChemS2 = np.zeros((drug_num, drug_num))
+            neighbor = np.argpartition(-drug_ChemS, kth=kth, axis=1)[:, :kth]
+            for i, value in enumerate(neighbor):
+                for j in value:
+                    drug_ChemS2[i][j] = drug_ChemS[i][j]
+                    
+            drug_SideS2 = np.zeros((drug_num, drug_num))
+            neighbor = np.argpartition(-drug_SideS, kth=kth, axis=1)[:, :kth]
+            for i, value in enumerate(neighbor):
+                for j in value:
+                    drug_SideS2[i][j] = drug_SideS[i][j]
+                    
+            drug_DDIS2 = np.zeros((drug_num, drug_num))
+            neighbor = np.argpartition(-drug_DDIS, kth=kth, axis=1)[:, :kth]
+            for i, value in enumerate(neighbor):
+                for j in value:
+                    drug_DDIS2[i][j] = drug_DDIS[i][j]
+      
+            drug_TargetS2 = np.zeros((drug_num, drug_num))
+            neighbor = np.argpartition(-drug_TargetS, kth=kth, axis=1)[:, :kth]
+            for i, value in enumerate(neighbor):
+                for j in value:
+                    drug_TargetS2[i][j] = drug_TargetS[i][j]
+                    
+            disease_PhS2 = np.zeros((disease_num, disease_num))
+            neighbor = np.argpartition(-disease_PhS, kth=kth, axis=1)[:, :kth]
+            for i, value in enumerate(neighbor):
+                for j in value:
+                    disease_PhS2[i][j] = disease_PhS[i][j]
+            
+            disease_DoS2 = np.zeros((disease_num, disease_num))
+            neighbor = np.argpartition(-disease_DoS, kth=kth, axis=1)[:, :kth]
+            for i, value in enumerate(neighbor):
+                for j in value:
+                    disease_DoS2[i][j] = disease_DoS[i][j]
+                    
+            drug_sim = torch.from_numpy(np.array([drug_ChemS2, drug_SideS2, drug_DDIS2, drug_TargetS2]))
+            disease_sim = torch.from_numpy(np.array([disease_PhS2, disease_DoS2]))
+            drug_sim_origin = torch.from_numpy(np.array([drug_ChemS, drug_SideS, drug_DDIS, drug_TargetS]))
+            disease_sim_origin = torch.from_numpy(np.array([disease_PhS, disease_DoS]))
             
         drug_num = didr.shape[0]
         disease_num = didr.shape[1]
@@ -48,6 +95,9 @@ class ProcessAndData():
 
         torch.save(drug_sim, self.drug_sim_dir)
         torch.save(disease_sim, self.dis_sim_dir)
+        torch.save(drug_sim_origin, self.drug_sim_origin_dir)
+        torch.save(disease_sim_origin, self.dis_sim_origin_dir)
+        
         pos_row, _ = np.nonzero(didr)
         r_d_pos_edge = torch.from_numpy(np.array(np.nonzero(didr)))
         r_d_neg_edge = torch.from_numpy(np.array(np.where(didr == 0)))  # sxd
